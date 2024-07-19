@@ -5,7 +5,7 @@ const { setHeaders } = require("./middlewares/setHeaders");
 const path = require("path");
 const userRouter = require("./modules/v1/users/user.routes");
 const postRouter = require("./modules/v1/posts/post.routes");
-//
+const errorHandler = require("./middlewares/errorHandler ");
 const app = express();
 // parse application/x-www-form-urlencoded
 app.use(express.urlencoded({ limit: "50mb", extended: true }));
@@ -33,6 +33,8 @@ app.use((req, res) => {
     .status(404)
     .json({ msg: "this path is not found cheak mothode or path" });
 });
+// err handler
+app.use(errorHandler); // middleware error handler
 
 //export
 module.exports = app;

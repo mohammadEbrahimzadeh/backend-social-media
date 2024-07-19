@@ -1,6 +1,7 @@
 const multer = require("multer");
 const fs = require("fs");
 const path = require("path");
+const { errorResponse } = require("../utils/response");
 exports.multerStorage = (destination, allowedTypes = /jpg|jpeg| png |webp/) => {
   if (!fs.existsSync(destination)) {
     fs.mkdirSync(destination);
@@ -12,7 +13,7 @@ exports.multerStorage = (destination, allowedTypes = /jpg|jpeg| png |webp/) => {
     filename: function (req, file, cb) {
       const uniq = Date.now() * Math.floor(Math.random() * 1e9);
       const ext = path.extname(file.originalname);
-      cb(null, `${uniq} ${ext}`);
+      cb(null, `${uniq}${ext}`);
     },
   });
 
