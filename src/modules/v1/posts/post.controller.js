@@ -1,6 +1,6 @@
-const { errorResponse } = require("../../../utils/response");
+const { errorResponse, successResponse } = require("../../../utils/response");
 const { createPostValidator } = require("./createPostValidator");
-
+const postModel = require("../../../models/v1/post");
 exports.createPost = async (req, res, next) => {
   try {
     const { description, hashtags } = req.body;
@@ -11,10 +11,23 @@ exports.createPost = async (req, res, next) => {
     const user = req.user;
     const tags = hashtags.split(",");
     if (!req.file) {
-      errorResponse(res, 201, "media is required");
+      errorResponse(res, 401, "media is required");
+      return;
     }
-    errorResponse(res, 200, "sssss");
+    const mediaUrlPath = `images/posts/${req.file.filename}`;
+    const post = new postModel({
+      media: {
+        path: mediaUrlPath,
+        filename: req.file.filename,
+      },
+      description: description,
+      hashtags: tags,
+      user: user._id,
+    });
+    await post.save();
+    successResponse(res, 201, { msg: "post created", post });
   } catch (error) {
+    console.log(error);
     errorResponse(res, 409, error.errors);
   }
 };
