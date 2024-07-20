@@ -8,9 +8,9 @@ exports.createPost = async (req, res, next) => {
       errorResponse(res, 401, "user is not admin");
       return;
     }
-    const { description, hashtags } = req.body;
+    const { title, description, hashtags } = req.body;
     await createPostValidator.validate(
-      { description, hashtags },
+      { title, description, hashtags },
       { abortEarly: false }
     );
 
@@ -25,7 +25,8 @@ exports.createPost = async (req, res, next) => {
         path: mediaUrlPath,
         filename: req.file.filename,
       },
-      description: description,
+      title,
+      description,
       hashtags: tags,
       user: user._id,
     });
