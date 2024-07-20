@@ -1,6 +1,7 @@
 const { errorResponse, successResponse } = require("../../../utils/response");
 const { createPostValidator } = require("./createPostValidator");
 const postModel = require("../../../models/v1/post");
+const { $where } = require("../../../models/v1/user");
 exports.createPost = async (req, res, next) => {
   try {
     const user = req.user;
@@ -39,14 +40,35 @@ exports.createPost = async (req, res, next) => {
 };
 exports.getAllPosts = async (req, res) => {
   try {
-    const user = req.user;
-    if (user.role !== "ADMIN") {
-      errorResponse(res, 401, "user is not admin");
-      return;
-    }
     const allPosts = await postModel.find({}, { _id: 0, __v: 0 }).lean();
     successResponse(res, 200, { allPosts });
   } catch (error) {
+    errorResponse(res, 409, error.errors);
+  }
+};
+exports.myPosts = async (req, res) => {
+  try {
+    const user = req.user;
+    const allPosts = await postModel
+      .find({ user: user._id }, { _id: 0, __v: 0, user: 0 })
+      .lean();
+    successResponse(res, 200, { allPosts });
+  } catch (error) {
+    errorResponse(res, 409, error.errors);
+  }
+};
+exports.searchPosts = async (req, res) => {
+  try {
+    const query = req.query.query;
+    if (!query) {
+      errorResponse(res, 409, "please enter  query in your path");
+      return;
+    }
+    const regex = new RegExp(query, "i");
+    const resultSearch = await postModel.find({ title: { $regex: regex } });
+    successResponse(res, 200, { resultSearch });
+  } catch (error) {
+    console.log(error);
     errorResponse(res, 409, error.errors);
   }
 };

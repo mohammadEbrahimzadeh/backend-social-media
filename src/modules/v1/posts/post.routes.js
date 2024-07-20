@@ -12,4 +12,6 @@ router
   .route("/create-post")
   .post(auth, upload.single("media"), controller.createPost);
 router.route("/get-all-posts").get(auth, controller.getAllPosts);
+router.route("/my-posts").get(auth, controller.myPosts);
+router.route("/search-posts/").get(auth, controller.searchPosts);
 module.exports = router;

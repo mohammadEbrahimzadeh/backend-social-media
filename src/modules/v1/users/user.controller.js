@@ -288,7 +288,7 @@ exports.resetPassword = async (req, res) => {
       data: "",
     });
   } catch (error) {
-    console.log(error, "===========2131231");
+    console.log(error);
     return errorResponse(res, 409, error, {});
   }
 };

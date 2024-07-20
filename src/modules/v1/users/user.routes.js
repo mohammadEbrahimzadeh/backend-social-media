@@ -6,6 +6,6 @@ router.route("/login").post(controller.login);
 router.route("/refresh-token").get(controller.refreshToken);
 router.route("/update-password").post(controller.updatePassword);
 router.route("/forget-password").post(controller.forgetPassword);
-router.route("/reset-password/:token").get(controller.resetPassword);
+router.route("/reset-password").get(controller.resetPassword);
 
 module.exports = router;
