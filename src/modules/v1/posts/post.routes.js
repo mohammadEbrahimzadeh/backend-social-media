@@ -11,5 +11,5 @@ const router = express.Router();
 router
   .route("/create-post")
   .post(auth, upload.single("media"), controller.createPost);
-
+router.route("/get-all-posts").get(auth, controller.getAllPosts);
 module.exports = router;
