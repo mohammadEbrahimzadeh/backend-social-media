@@ -1,7 +1,7 @@
+const mongoose = require("mongoose");
 const { errorResponse, successResponse } = require("../../../utils/response");
-const { createPostValidator } = require("./createPostValidator");
+const postValidator = require("./postValidator");
 const postModel = require("../../../models/v1/post");
-const { $where } = require("../../../models/v1/user");
 exports.createPost = async (req, res, next) => {
   try {
     const user = req.user;
@@ -10,7 +10,7 @@ exports.createPost = async (req, res, next) => {
       return;
     }
     const { title, description, hashtags } = req.body;
-    await createPostValidator.validate(
+    await postValidator.createPostValidator.validate(
       { title, description, hashtags },
       { abortEarly: false }
     );
@@ -67,6 +67,42 @@ exports.searchPosts = async (req, res) => {
     const regex = new RegExp(query, "i");
     const resultSearch = await postModel.find({ title: { $regex: regex } });
     successResponse(res, 200, { resultSearch });
+  } catch (error) {
+    console.log(error);
+    errorResponse(res, 409, error.errors);
+  }
+};
+exports.deletePost = async (req, res) => {
+  try {
+    const user = req.user;
+    const { postid } = req.body;
+    await postValidator.deletePostValidator.validate({
+      postid,
+    });
+    const isValidObjectId = mongoose.Types.ObjectId.isValid(postid);
+
+    if (!isValidObjectId) {
+      return errorResponse(res, 401, "post id is not valid");
+    }
+    const post = await postModel.findOne({ _id: postid });
+    if (!post) {
+      return errorResponse(res, 404, "post  is not found");
+    }
+    const userId = user._id.toString();
+    const postCreatorId = post.user.toString();
+
+    if (postCreatorId !== userId || user.role !== "ADMIN") {
+      return errorResponse(
+        res,
+        401,
+        "user is not create this post or is not admin"
+      );
+    }
+    const resultPostDelete = await postModel.deleteOne({ _id: postid });
+    if (resultPostDelete.deletedCount < 1) {
+      return errorResponse(res, 404, "post  is not found");
+    }
+    successResponse(res, 201, "post deleted");
   } catch (error) {
     console.log(error);
     errorResponse(res, 409, error.errors);

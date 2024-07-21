@@ -10,3 +10,6 @@ exports.createPostValidator = yup.object({
     .required("Description is required"),
   hashtags: yup.string().required("hashtags is required "),
 });
+exports.deletePostValidator = yup.object({
+  postid: yup.string().required("postId is required"),
+});

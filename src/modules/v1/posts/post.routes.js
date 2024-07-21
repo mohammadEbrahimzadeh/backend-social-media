@@ -14,4 +14,5 @@ router
 router.route("/get-all-posts").get(auth, controller.getAllPosts);
 router.route("/my-posts").get(auth, controller.myPosts);
 router.route("/search-posts/").get(auth, controller.searchPosts);
+router.route("/delete-post/").delete(auth, controller.deletePost);
 module.exports = router;
