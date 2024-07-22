@@ -1,25 +1,19 @@
-const mongoose = require("mongoose");
+const fs = require("fs");
+
 const { errorResponse, successResponse } = require("../../../utils/response");
-const postValidator = require("./postValidator");
+const {
+  createPostAccess,
+  searchPostsAccess,
+  deletePostsAccess,
+  updatePostsAccess,
+} = require("./postValidator");
 const postModel = require("../../../models/v1/post");
-exports.createPost = async (req, res, next) => {
+exports.createPost = async (req, res) => {
   try {
     const user = req.user;
-    if (user.role !== "ADMIN") {
-      errorResponse(res, 401, "user is not admin");
-      return;
-    }
     const { title, description, hashtags } = req.body;
-    await postValidator.createPostValidator.validate(
-      { title, description, hashtags },
-      { abortEarly: false }
-    );
-
+    await createPostAccess(req, res);
     const tags = hashtags.split(",");
-    if (!req.file) {
-      errorResponse(res, 401, "media is required");
-      return;
-    }
     const mediaUrlPath = `images/posts/${req.file.filename}`;
     const post = new postModel({
       media: {
@@ -35,7 +29,7 @@ exports.createPost = async (req, res, next) => {
     successResponse(res, 201, { msg: "post created", post });
   } catch (error) {
     console.log(error);
-    errorResponse(res, 409, error.errors);
+    return errorResponse(res, 409, error.message);
   }
 };
 exports.getAllPosts = async (req, res) => {
@@ -43,7 +37,7 @@ exports.getAllPosts = async (req, res) => {
     const allPosts = await postModel.find({}, { _id: 0, __v: 0 }).lean();
     successResponse(res, 200, { allPosts });
   } catch (error) {
-    errorResponse(res, 409, error.errors);
+    errorResponse(res, 409, error.message);
   }
 };
 exports.myPosts = async (req, res) => {
@@ -54,57 +48,71 @@ exports.myPosts = async (req, res) => {
       .lean();
     successResponse(res, 200, { allPosts });
   } catch (error) {
-    errorResponse(res, 409, error.errors);
+    errorResponse(res, 409, error.message);
   }
 };
 exports.searchPosts = async (req, res) => {
   try {
     const query = req.query.query;
-    if (!query) {
-      errorResponse(res, 409, "please enter  query in your path");
-      return;
-    }
+    searchPostsAccess(req, res);
     const regex = new RegExp(query, "i");
     const resultSearch = await postModel.find({ title: { $regex: regex } });
     successResponse(res, 200, { resultSearch });
   } catch (error) {
     console.log(error);
-    errorResponse(res, 409, error.errors);
+    errorResponse(res, 409, error.message);
   }
 };
 exports.deletePost = async (req, res) => {
   try {
     const user = req.user;
     const { postid } = req.body;
-    await postValidator.deletePostValidator.validate({
-      postid,
-    });
-    const isValidObjectId = mongoose.Types.ObjectId.isValid(postid);
-
-    if (!isValidObjectId) {
-      return errorResponse(res, 401, "post id is not valid");
+    const isUserCreator = await deletePostsAccess(req, res);
+    if (isUserCreator || user.role == "ADMIN") {
+      const resultPostDelete = await postModel.deleteOne({ _id: postid });
+      if (resultPostDelete.deletedCount < 1) {
+        return errorResponse(res, 404, "post  is not found");
+      }
+      successResponse(res, 201, "post deleted");
+    } else {
+      errorResponse(res, 401, "user is not create this post or is not admin");
     }
-    const post = await postModel.findOne({ _id: postid });
-    if (!post) {
-      return errorResponse(res, 404, "post  is not found");
-    }
-    const userId = user._id.toString();
-    const postCreatorId = post.user.toString();
-
-    if (postCreatorId !== userId || user.role !== "ADMIN") {
-      return errorResponse(
-        res,
-        401,
-        "user is not create this post or is not admin"
-      );
-    }
-    const resultPostDelete = await postModel.deleteOne({ _id: postid });
-    if (resultPostDelete.deletedCount < 1) {
-      return errorResponse(res, 404, "post  is not found");
-    }
-    successResponse(res, 201, "post deleted");
   } catch (error) {
     console.log(error);
-    errorResponse(res, 409, error.errors);
+    errorResponse(res, 409, error.message);
+  }
+};
+exports.updatePost = async (req, res) => {
+  try {
+    const { title, description, hashtags } = req.body;
+    const user = req.user;
+    await updatePostsAccess(req, res);
+    const mediaUrlPath = `images/posts/${req.file.filename}`;
+    const tags = hashtags.split(",");
+
+    await postModel.findOneAndUpdate(
+      { _id: req.body.postid },
+      {
+        media: {
+          path: mediaUrlPath,
+          filename: req.file.filename,
+        },
+        title,
+        description,
+        hashtags: tags,
+        user: user._id,
+      }
+    );
+    successResponse(res, 201, "post updated");
+  } catch (error) {
+    const mediaUrlPath = `public/images/posts/${req.file.filename}`;
+    fs.unlink(mediaUrlPath, (err) => {
+      if (err) {
+        console.error(err);
+        return;
+      }
+    });
+
+    errorResponse(res, 409, error.message);
   }
 };
