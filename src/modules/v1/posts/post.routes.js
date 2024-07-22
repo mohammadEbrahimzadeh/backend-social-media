@@ -18,4 +18,6 @@ router.route("/delete-post/").delete(auth, controller.deletePost);
 router
   .route("/update-post/")
   .put(auth, upload.single("media"), controller.updatePost);
+router.route("/likeToggle").post(auth, controller.likeToggle);
+
 module.exports = router;

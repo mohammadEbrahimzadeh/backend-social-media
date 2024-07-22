@@ -6,8 +6,12 @@ const {
   searchPostsAccess,
   deletePostsAccess,
   updatePostsAccess,
+  likeTogglePostsAccess,
 } = require("./postValidator");
 const postModel = require("../../../models/v1/post");
+const likeToggleModel = require("../../../models/v1/likeToggle");
+
+// ------------------->
 exports.createPost = async (req, res) => {
   try {
     const user = req.user;
@@ -113,6 +117,35 @@ exports.updatePost = async (req, res) => {
       }
     });
 
+    errorResponse(res, 409, error.message);
+  }
+};
+exports.likeToggle = async (req, res) => {
+  try {
+    const user = req.user;
+    const { postid } = req.body;
+    await likeTogglePostsAccess(req, res);
+    const likeToggleRecord = await likeToggleModel.findOne({
+      userid: user._id,
+      postid,
+    });
+    // ----------
+    if (likeToggleRecord) {
+      await likeToggleModel.deleteOne({
+        userid: user._id,
+        postid,
+      });
+
+      successResponse(res, 201, "post is disLiked");
+    } else {
+      const record = new likeToggleModel({
+        userid: user._id,
+        postid,
+      });
+      await record.save();
+      successResponse(res, 201, "post is liked");
+    }
+  } catch (error) {
     errorResponse(res, 409, error.message);
   }
 };

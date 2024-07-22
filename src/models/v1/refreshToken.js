@@ -3,7 +3,7 @@ const { v4: uuidv4 } = require("uuid");
 const schema = new mongoose.Schema({
   user: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: "User",
+    ref: "user",
     required: true,
   },
   token: {

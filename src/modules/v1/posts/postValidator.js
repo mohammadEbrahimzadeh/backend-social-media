@@ -16,6 +16,7 @@ const createPostValidator = yup.object({
 const deletePostValidator = yup.object({
   postid: yup.string().required("postId is required"),
 });
+
 const createPostAccess = async (req, res) => {
   const { title, description, hashtags } = req.body;
   await createPostValidator.validate(
@@ -82,6 +83,19 @@ const updatePostsAccess = async (req, res) => {
     throw new Error("user is not create this post");
   }
 };
+const likeTogglePostsAccess = async (req, res) => {
+  const { postid } = req.body;
+
+  await deletePostValidator.validate({ postid });
+  const isValidObjectId = mongoose.Types.ObjectId.isValid(postid);
+  if (!isValidObjectId) {
+    throw new Error("postid is not valid");
+  }
+  const post = await postModel.findOne({ _id: postid });
+  if (!post) {
+    throw new Error("post is not found");
+  }
+};
 module.exports = {
   createPostValidator,
   deletePostValidator,
@@ -89,4 +103,5 @@ module.exports = {
   searchPostsAccess,
   deletePostsAccess,
   updatePostsAccess,
+  likeTogglePostsAccess,
 };
