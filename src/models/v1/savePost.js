@@ -14,5 +14,5 @@ const schema = mongoose.Schema(
   },
   { timestamps: true }
 );
-const model = mongoose.model("likeToggle", schema);
+const model = mongoose.model("saveposts", schema);
 module.exports = model;

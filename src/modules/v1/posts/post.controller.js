@@ -1,4 +1,5 @@
 const fs = require("fs");
+const commentModel = require("../../../models/v1/comment");
 
 const { errorResponse, successResponse } = require("../../../utils/response");
 const {
@@ -7,10 +8,12 @@ const {
   deletePostsAccess,
   updatePostsAccess,
   likeTogglePostsAccess,
+  addCommentPostsAccess,
+  deleteCommentPostValidator,
 } = require("./postValidator");
 const postModel = require("../../../models/v1/post");
 const likeToggleModel = require("../../../models/v1/likeToggle");
-
+const savepostsModel = require("../../../models/v1/savePost");
 // ------------------->
 exports.createPost = async (req, res) => {
   try {
@@ -32,16 +35,19 @@ exports.createPost = async (req, res) => {
     await post.save();
     successResponse(res, 201, { msg: "post created", post });
   } catch (error) {
-    console.log(error);
-    return errorResponse(res, 409, error.message);
+    return errorResponse(res, 409, { msg: error.message, error });
   }
 };
 exports.getAllPosts = async (req, res) => {
   try {
-    const allPosts = await postModel.find({}, { _id: 0, __v: 0 }).lean();
+    const allPosts = await postModel
+      .find({}, { _id: 0, __v: 0 })
+      .populate("comments", "-__v");
+
     successResponse(res, 200, { allPosts });
   } catch (error) {
-    errorResponse(res, 409, error.message);
+    console.log(error);
+    errorResponse(res, 409, { msg: error.message, error });
   }
 };
 exports.myPosts = async (req, res) => {
@@ -52,7 +58,7 @@ exports.myPosts = async (req, res) => {
       .lean();
     successResponse(res, 200, { allPosts });
   } catch (error) {
-    errorResponse(res, 409, error.message);
+    errorResponse(res, 409, { msg: error.message, error });
   }
 };
 exports.searchPosts = async (req, res) => {
@@ -63,27 +69,20 @@ exports.searchPosts = async (req, res) => {
     const resultSearch = await postModel.find({ title: { $regex: regex } });
     successResponse(res, 200, { resultSearch });
   } catch (error) {
-    console.log(error);
-    errorResponse(res, 409, error.message);
+    errorResponse(res, 409, { msg: error.message, error });
   }
 };
 exports.deletePost = async (req, res) => {
   try {
-    const user = req.user;
     const { postid } = req.body;
-    const isUserCreator = await deletePostsAccess(req, res);
-    if (isUserCreator || user.role == "ADMIN") {
-      const resultPostDelete = await postModel.deleteOne({ _id: postid });
-      if (resultPostDelete.deletedCount < 1) {
-        return errorResponse(res, 404, "post  is not found");
-      }
-      successResponse(res, 201, "post deleted");
-    } else {
-      errorResponse(res, 401, "user is not create this post or is not admin");
+    await deletePostsAccess(req, res);
+    const resultPostDelete = await postModel.deleteOne({ _id: postid });
+    if (resultPostDelete.deletedCount < 1) {
+      return errorResponse(res, 404, "post  is not found");
     }
+    successResponse(res, 201, "post deleted");
   } catch (error) {
-    console.log(error);
-    errorResponse(res, 409, error.message);
+    errorResponse(res, 409, { msg: error.message, error });
   }
 };
 exports.updatePost = async (req, res) => {
@@ -117,7 +116,7 @@ exports.updatePost = async (req, res) => {
       }
     });
 
-    errorResponse(res, 409, error.message);
+    errorResponse(res, 409, { msg: error.message, error });
   }
 };
 exports.likeToggle = async (req, res) => {
@@ -146,6 +145,70 @@ exports.likeToggle = async (req, res) => {
       successResponse(res, 201, "post is liked");
     }
   } catch (error) {
-    errorResponse(res, 409, error.message);
+    errorResponse(res, 409, { msg: error.message, error });
+  }
+};
+exports.savePostToggle = async (req, res) => {
+  try {
+    const user = req.user;
+    const { postid } = req.body;
+    await likeTogglePostsAccess(req, res);
+    const savePostToggleRecord = await savepostsModel.findOne({
+      userid: user._id,
+      postid,
+    });
+    // ----------
+    if (savePostToggleRecord) {
+      await savepostsModel.deleteOne({
+        userid: user._id,
+        postid,
+      });
+
+      successResponse(res, 201, "post is unsaved");
+    } else {
+      const record = new savepostsModel({
+        userid: user._id,
+        postid,
+      });
+      await record.save();
+      successResponse(res, 201, "post is saved");
+    }
+  } catch (error) {
+    errorResponse(res, 409, { msg: error.message, error });
+  }
+};
+exports.addComment = async (req, res) => {
+  try {
+    const user = req.user;
+    const { postid, title, content } = req.body;
+    await addCommentPostsAccess(req, res);
+    let comment = new commentModel({
+      postid,
+      userid: user._id,
+      title,
+      content,
+    });
+    comment = await comment.save();
+    await postModel.findByIdAndUpdate(postid, {
+      $push: { comments: comment._id },
+    });
+
+    console.log(comment);
+    successResponse(res, 201, "comment submitted successfully");
+  } catch (error) {
+    errorResponse(res, 409, { msg: error.message, error });
+  }
+};
+exports.deleteComment = async (req, res) => {
+  try {
+    const { commentid } = req.body;
+    await deleteCommentPostValidator(req, res);
+    const resultDelete = await commentModel.deleteOne({ _id: commentid });
+    if (resultDelete.deletedCount < 1) {
+      throw new Error("comment is not found");
+    }
+    successResponse(res, 201, "comment deleted");
+  } catch (error) {
+    errorResponse(res, 409, { msg: error.message, error });
   }
 };

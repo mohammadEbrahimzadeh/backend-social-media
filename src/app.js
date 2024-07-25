@@ -6,6 +6,7 @@ const path = require("path");
 const userRouter = require("./modules/v1/users/user.routes");
 const postRouter = require("./modules/v1/posts/post.routes");
 const errorHandler = require("./middlewares/errorHandler ");
+const convertToTrim = require("./middlewares/convertToTrim");
 const app = express();
 // parse application/x-www-form-urlencoded
 app.use(express.urlencoded({ limit: "50mb", extended: true }));
@@ -23,6 +24,8 @@ app.use(setHeaders);
 app.use(express.static(path.join(__dirname, "..", "public")));
 app.use("/images", express.static(path.join(__dirname, "public/images")));
 
+//convert to trim req.body
+app.use(convertToTrim);
 // routes
 app.use("/users", userRouter);
 app.use("/posts", postRouter);
@@ -38,5 +41,7 @@ app.use(errorHandler); // middleware error handler
 
 //export
 module.exports = app;
+// refactor user controller
+// refactor resposes
 // baack expier time access token
 // baack expier time otp email

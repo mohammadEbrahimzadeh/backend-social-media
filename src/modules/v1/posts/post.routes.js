@@ -7,17 +7,30 @@ const upload = multerStorage(
   /png|jpeg|jpg|webp|mp4|mkv/
 );
 const router = express.Router();
+// POST ------------->
+
 router
   .route("/create-post")
   .post(auth, upload.single("media"), controller.createPost);
-router.route("/get-all-posts").get(auth, controller.getAllPosts);
-router.route("/my-posts").get(auth, controller.myPosts);
-router.route("/search-posts/").get(auth, controller.searchPosts);
-router.route("/delete-post/").delete(auth, controller.deletePost);
+router.route("/like-toggle").post(auth, controller.likeToggle);
+router.route("/save-post-toggle").post(auth, controller.savePostToggle);
+router.route("/add-comment").post(auth, controller.addComment);
+
+// PUT ------------------->
 
 router
   .route("/update-post/")
   .put(auth, upload.single("media"), controller.updatePost);
-router.route("/likeToggle").post(auth, controller.likeToggle);
+
+// DELETE -------------------->
+
+router.route("/delete-post/").delete(auth, controller.deletePost);
+router.route("/delete-comment/").delete(auth, controller.deleteComment);
+
+// GET-------------->
+
+router.route("/get-all-posts").get(auth, controller.getAllPosts);
+router.route("/my-posts").get(auth, controller.myPosts);
+router.route("/search-posts/").get(auth, controller.searchPosts);
 
 module.exports = router;

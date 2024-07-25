@@ -1,5 +1,6 @@
 const mongoose = require("mongoose");
 const postModel = require("../../../models/v1/post");
+const commentModel = require("../../../models/v1/comment");
 
 const yup = require("yup");
 const createPostValidator = yup.object({
@@ -17,6 +18,20 @@ const deletePostValidator = yup.object({
   postid: yup.string().required("postId is required"),
 });
 
+const addCommentValidator = yup.object({
+  postid: yup.string().required("postId is required"),
+  title: yup
+    .string()
+    .max(2200, "title cannot be more than 2200 chars long !!")
+    .required("title is required"),
+  content: yup
+    .string()
+    .max(5000, "content cannot be more than 5000 chars long !!")
+    .required("content is required"),
+});
+const deleteCommentValidator = yup.object({
+  commentid: yup.string().required("commentid is required"),
+});
 const createPostAccess = async (req, res) => {
   const { title, description, hashtags } = req.body;
   await createPostValidator.validate(
@@ -36,9 +51,12 @@ const searchPostsAccess = (req, res) => {
 const deletePostsAccess = async (req, res) => {
   const user = req.user;
   const { postid } = req.body;
-  await deletePostValidator.validate({
-    postid,
-  });
+  await deletePostValidator.validate(
+    {
+      postid,
+    },
+    { abortEarly: false }
+  );
   const isValidObjectId = mongoose.Types.ObjectId.isValid(postid);
 
   if (!isValidObjectId) {
@@ -50,7 +68,12 @@ const deletePostsAccess = async (req, res) => {
   }
   const isUserCreator = user._id.toString() == post.user.toString();
 
-  return isUserCreator;
+  if (!isUserCreator) {
+    throw new Error("user is not create this post or is not admin");
+  }
+  if (user.role !== "ADMIN") {
+    throw new Error("user is not create this post or is not admin");
+  }
 };
 const updatePostsAccess = async (req, res) => {
   const { title, description, hashtags, postid } = req.body;
@@ -67,7 +90,7 @@ const updatePostsAccess = async (req, res) => {
     },
     { abortEarly: false }
   );
-  await deletePostValidator.validate({ postid });
+  await deletePostValidator.validate({ postid }, { abortEarly: false });
   const isValidObjectId = mongoose.Types.ObjectId.isValid(postid);
   if (!isValidObjectId) {
     throw new Error("post id is not valid");
@@ -86,7 +109,7 @@ const updatePostsAccess = async (req, res) => {
 const likeTogglePostsAccess = async (req, res) => {
   const { postid } = req.body;
 
-  await deletePostValidator.validate({ postid });
+  await deletePostValidator.validate({ postid }, { abortEarly: false });
   const isValidObjectId = mongoose.Types.ObjectId.isValid(postid);
   if (!isValidObjectId) {
     throw new Error("postid is not valid");
@@ -96,6 +119,43 @@ const likeTogglePostsAccess = async (req, res) => {
     throw new Error("post is not found");
   }
 };
+const addCommentPostsAccess = async (req, res) => {
+  const { postid, title, content } = req.body;
+  await addCommentValidator.validate(
+    { postid, title, content },
+    { abortEarly: false }
+  );
+  const isValidObjectId = mongoose.Types.ObjectId.isValid(postid);
+  if (!isValidObjectId) {
+    throw new Error("postid is not valid");
+  }
+  const post = await postModel.findOne({ _id: postid });
+  if (!post) {
+    throw new Error("post is not found");
+  }
+};
+const deleteCommentPostValidator = async (req, res) => {
+  const { commentid } = req.body;
+  const user = req.user;
+  await deleteCommentValidator.validate({ commentid }, { abortEarly: false });
+  const isValidObjectId = mongoose.Types.ObjectId.isValid(commentid);
+  if (!isValidObjectId) {
+    throw new Error("postid is not valid");
+  }
+  const comment = await commentModel.findOne({ _id: commentid });
+  if (!comment) {
+    throw new Error("comment is not found");
+  }
+  const isUserCreator = user._id.toString() == comment.userid.toString();
+
+  if (!isUserCreator) {
+    throw new Error("user is not create this post or is not admin");
+  }
+  if (user.role !== "ADMIN") {
+    throw new Error("user is not create this post or is not admin");
+  }
+};
+// ->>>>>>>>>>>>>>>>>
 module.exports = {
   createPostValidator,
   deletePostValidator,
@@ -104,4 +164,6 @@ module.exports = {
   deletePostsAccess,
   updatePostsAccess,
   likeTogglePostsAccess,
+  addCommentPostsAccess,
+  deleteCommentPostValidator,
 };

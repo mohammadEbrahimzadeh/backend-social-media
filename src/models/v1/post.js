@@ -12,6 +12,7 @@ const schema = mongoose.Schema({
     ref: "user",
     required: true,
   },
+  comments: [{ type: mongoose.Schema.Types.ObjectId, ref: "comment" }],
 });
 const model = mongoose.model("post", schema);
 module.exports = model;
