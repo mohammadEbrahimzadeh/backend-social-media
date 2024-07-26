@@ -19,18 +19,19 @@ router.route("/add-comment").post(auth, controller.addComment);
 // PUT ------------------->
 
 router
-  .route("/update-post/")
+  .route("/update-post")
   .put(auth, upload.single("media"), controller.updatePost);
 
 // DELETE -------------------->
 
-router.route("/delete-post/").delete(auth, controller.deletePost);
-router.route("/delete-comment/").delete(auth, controller.deleteComment);
+router.route("/delete-post").delete(auth, controller.deletePost);
+router.route("/delete-comment").delete(auth, controller.deleteComment);
 
 // GET-------------->
 
 router.route("/get-all-posts").get(auth, controller.getAllPosts);
 router.route("/my-posts").get(auth, controller.myPosts);
-router.route("/search-posts/").get(auth, controller.searchPosts);
+router.route("/search-posts").get(auth, controller.searchPosts);
+router.route("/post-details").get(auth, controller.postDetails);
 
 module.exports = router;

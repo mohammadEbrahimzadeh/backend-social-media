@@ -13,6 +13,7 @@ const schema = mongoose.Schema({
     required: true,
   },
   comments: [{ type: mongoose.Schema.Types.ObjectId, ref: "comment" }],
+  likes: [{ type: mongoose.Schema.Types.ObjectId, ref: "likeToggle" }],
 });
 const model = mongoose.model("post", schema);
 module.exports = model;

@@ -71,7 +71,7 @@ const deletePostsAccess = async (req, res) => {
   if (!isUserCreator) {
     throw new Error("user is not create this post or is not admin");
   }
-  if (user.role !== "ADMIN") {
+  if (user.role !== "ADMIN" && !isUserCreator) {
     throw new Error("user is not create this post or is not admin");
   }
 };
@@ -80,7 +80,7 @@ const updatePostsAccess = async (req, res) => {
   const user = req.user;
 
   if (!req.file) {
-    throw new Error("enter file is required");
+    throw new Error("enter media is required");
   }
   await createPostValidator.validate(
     {
