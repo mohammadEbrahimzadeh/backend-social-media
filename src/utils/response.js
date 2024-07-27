@@ -1,16 +1,22 @@
 //* Helper function to format success response
-const successResponse = (res, statusCode = 200, data) => {
+const successResponse = (res, statusCode = 200, response = {}) => {
   return res.status(statusCode).json({
     status: statusCode,
     success: true,
-    data,
+    response,
   });
 };
 //* Helper function to format error response
 
-const errorResponse = (res, statusCode, msg, data) => {
+const errorResponse = (res, statusCode = 409, error = {}) => {
   return res
     .status(statusCode)
-    .json({ status: statusCode, success: false, error: msg, data });
+    .json({ status: statusCode, success: false, error });
 };
-module.exports = { successResponse, errorResponse };
+//* move to catch block
+const throwError = (errorMessage, statusCode) => {
+  let error = new Error(errorMessage);
+  error.statusCode = statusCode;
+  throw error;
+};
+module.exports = { successResponse, errorResponse, throwError };

@@ -1,8 +1,8 @@
 const mongoose = require("mongoose");
 const postModel = require("../../../models/v1/post");
 const commentModel = require("../../../models/v1/comment");
-
 const yup = require("yup");
+const { throwError } = require("../../../utils/response");
 const createPostValidator = yup.object({
   title: yup
     .string()
@@ -39,13 +39,13 @@ const createPostAccess = async (req, res) => {
     { abortEarly: false }
   );
   if (!req.file) {
-    throw new Error("media is required");
+    throwError("media is required", 400);
   }
 };
 const searchPostsAccess = (req, res) => {
   const query = req.query.query;
   if (!query) {
-    throw new Error("please enter  query in your path");
+    throwError("please enter query in url", 400);
   }
 };
 const deletePostsAccess = async (req, res) => {
@@ -60,19 +60,19 @@ const deletePostsAccess = async (req, res) => {
   const isValidObjectId = mongoose.Types.ObjectId.isValid(postid);
 
   if (!isValidObjectId) {
-    throw new Error("post id is not valid");
+    throwError("post id is not valid", 400);
   }
   const post = await postModel.findOne({ _id: postid });
   if (!post) {
-    throw new Error("post  is not found");
+    throwError("post is not found", 404);
   }
   const isUserCreator = user._id.toString() == post.user.toString();
 
   if (!isUserCreator) {
-    throw new Error("user is not create this post or is not admin");
+    throwError("user is not create this post or is not admin", 403);
   }
   if (user.role !== "ADMIN" && !isUserCreator) {
-    throw new Error("user is not create this post or is not admin");
+    throwError("user is not create this post or is not admin", 403);
   }
 };
 const updatePostsAccess = async (req, res) => {
@@ -80,7 +80,7 @@ const updatePostsAccess = async (req, res) => {
   const user = req.user;
 
   if (!req.file) {
-    throw new Error("enter media is required");
+    throwError("enter media is required", 400);
   }
   await createPostValidator.validate(
     {
@@ -93,17 +93,17 @@ const updatePostsAccess = async (req, res) => {
   await deletePostValidator.validate({ postid }, { abortEarly: false });
   const isValidObjectId = mongoose.Types.ObjectId.isValid(postid);
   if (!isValidObjectId) {
-    throw new Error("post id is not valid");
+    throwError("post id is not valid", 400);
   }
 
   const post = await postModel.findOne({ _id: postid });
   if (!post) {
-    throw new Error("post is not found");
+    throwError("post is not found", 404);
   }
   const userId = user._id.toString();
   const postCreatorId = post.user.toString();
   if (postCreatorId !== userId) {
-    throw new Error("user is not create this post");
+    throwError("user is not create this post", 403);
   }
 };
 const likeTogglePostsAccess = async (req, res) => {
@@ -112,11 +112,11 @@ const likeTogglePostsAccess = async (req, res) => {
   await deletePostValidator.validate({ postid }, { abortEarly: false });
   const isValidObjectId = mongoose.Types.ObjectId.isValid(postid);
   if (!isValidObjectId) {
-    throw new Error("postid is not valid");
+    throwError("postid is not valid", 400);
   }
   const post = await postModel.findOne({ _id: postid });
   if (!post) {
-    throw new Error("post is not found");
+    throwError("post is not found", 404);
   }
 };
 const addCommentPostsAccess = async (req, res) => {
@@ -127,11 +127,11 @@ const addCommentPostsAccess = async (req, res) => {
   );
   const isValidObjectId = mongoose.Types.ObjectId.isValid(postid);
   if (!isValidObjectId) {
-    throw new Error("postid is not valid");
+    throwError("postid is not valid", 400);
   }
   const post = await postModel.findOne({ _id: postid });
   if (!post) {
-    throw new Error("post is not found");
+    throwError("post is not found", 404);
   }
 };
 const deleteCommentPostValidator = async (req, res) => {
@@ -140,19 +140,19 @@ const deleteCommentPostValidator = async (req, res) => {
   await deleteCommentValidator.validate({ commentid }, { abortEarly: false });
   const isValidObjectId = mongoose.Types.ObjectId.isValid(commentid);
   if (!isValidObjectId) {
-    throw new Error("postid is not valid");
+    throwError("postid is not valid", 400);
   }
   const comment = await commentModel.findOne({ _id: commentid });
   if (!comment) {
-    throw new Error("comment is not found");
+    throwError("comment is not found", 404);
   }
   const isUserCreator = user._id.toString() == comment.userid.toString();
 
   if (!isUserCreator) {
-    throw new Error("user is not create this post or is not admin");
+    throwError("user is not create this post or is not admin", 403);
   }
   if (user.role !== "ADMIN") {
-    throw new Error("user is not create this post or is not admin");
+    throwError("user is not create this post or is not admin", 403);
   }
 };
 // ->>>>>>>>>>>>>>>>>

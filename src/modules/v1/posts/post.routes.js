@@ -33,5 +33,6 @@ router.route("/get-all-posts").get(auth, controller.getAllPosts);
 router.route("/my-posts").get(auth, controller.myPosts);
 router.route("/search-posts").get(auth, controller.searchPosts);
 router.route("/post-details").get(auth, controller.postDetails);
+router.route("/my-save-posts").get(auth, controller.mySavePosts);
 
 module.exports = router;
