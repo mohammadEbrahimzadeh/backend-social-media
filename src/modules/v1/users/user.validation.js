@@ -1,4 +1,6 @@
 const yup = require("yup");
+const userModel = require("../../../models/v1/user");
+const { throwError } = require("../../../utils/response");
 
 exports.registerUserVakidator = yup.object({
   name: yup
@@ -80,3 +82,28 @@ exports.resetPasswordValidator = yup.object({
     .max(20, "name cannot be longer than 20 characters")
     .required(" new_password is required"),
 });
+exports.banUserToAccess = async (req) => {
+  const { userid } = req.body;
+  if (!userid) {
+    throwError("please enter userid", 400);
+  }
+  const user = await userModel.findOne({ _id: userid });
+  if (!user) {
+    throwError("user not found", 404);
+  }
+  if (user.role === "ADMIN") {
+    throwError("You cannot ban the admin", 403);
+  }
+  return user;
+};
+exports.userInformation = async (req) => {
+  const { userid } = req.body;
+  if (!userid) {
+    throwError("please enter userid", 400);
+  }
+  const user = await userModel.findOne({ _id: userid }, { password: 0 });
+  if (!user) {
+    throwError("user not found", 404);
+  }
+  return user;
+};

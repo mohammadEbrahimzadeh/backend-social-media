@@ -32,7 +32,7 @@ const addCommentValidator = yup.object({
 const deleteCommentValidator = yup.object({
   commentid: yup.string().required("commentid is required"),
 });
-const createPostAccess = async (req, res) => {
+exports.createPostAccess = async (req, res) => {
   const { title, description, hashtags } = req.body;
   await createPostValidator.validate(
     { title, description, hashtags },
@@ -42,13 +42,13 @@ const createPostAccess = async (req, res) => {
     throwError("media is required", 400);
   }
 };
-const searchPostsAccess = (req, res) => {
+exports.searchPostsAccess = (req, res) => {
   const query = req.query.query;
   if (!query) {
     throwError("please enter query in url", 400);
   }
 };
-const deletePostsAccess = async (req, res) => {
+exports.deletePostsAccess = async (req, res) => {
   const user = req.user;
   const { postid } = req.body;
   await deletePostValidator.validate(
@@ -75,7 +75,7 @@ const deletePostsAccess = async (req, res) => {
     throwError("user is not create this post or is not admin", 403);
   }
 };
-const updatePostsAccess = async (req, res) => {
+exports.updatePostsAccess = async (req, res) => {
   const { title, description, hashtags, postid } = req.body;
   const user = req.user;
 
@@ -106,7 +106,7 @@ const updatePostsAccess = async (req, res) => {
     throwError("user is not create this post", 403);
   }
 };
-const likeTogglePostsAccess = async (req, res) => {
+exports.likeTogglePostsAccess = async (req, res) => {
   const { postid } = req.body;
 
   await deletePostValidator.validate({ postid }, { abortEarly: false });
@@ -119,7 +119,7 @@ const likeTogglePostsAccess = async (req, res) => {
     throwError("post is not found", 404);
   }
 };
-const addCommentPostsAccess = async (req, res) => {
+exports.addCommentPostsAccess = async (req, res) => {
   const { postid, title, content } = req.body;
   await addCommentValidator.validate(
     { postid, title, content },
@@ -134,7 +134,7 @@ const addCommentPostsAccess = async (req, res) => {
     throwError("post is not found", 404);
   }
 };
-const deleteCommentPostValidator = async (req, res) => {
+exports.deleteCommentPostValidator = async (req, res) => {
   const { commentid } = req.body;
   const user = req.user;
   await deleteCommentValidator.validate({ commentid }, { abortEarly: false });
@@ -154,16 +154,4 @@ const deleteCommentPostValidator = async (req, res) => {
   if (user.role !== "ADMIN") {
     throwError("user is not create this post or is not admin", 403);
   }
-};
-// ->>>>>>>>>>>>>>>>>
-module.exports = {
-  createPostValidator,
-  deletePostValidator,
-  createPostAccess,
-  searchPostsAccess,
-  deletePostsAccess,
-  updatePostsAccess,
-  likeTogglePostsAccess,
-  addCommentPostsAccess,
-  deleteCommentPostValidator,
 };

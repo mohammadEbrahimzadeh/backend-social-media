@@ -1,15 +1,13 @@
-const {
-  registerUserVakidator,
-  logInUserValidator,
-  updatePasswordValidator,
-  forGetPasswordValidator,
-  resetPasswordValidator,
-} = require("./user.validation");
+const userValidator = require("./user.validation");
 const bcrypt = require("bcryptjs");
 const crypto = require("crypto");
 const userModel = require("../../../models/v1/user");
 const RefreshTokenModel = require("../../../models/v1/refreshToken");
-const { successResponse, errorResponse } = require("../../../utils/response");
+const {
+  successResponse,
+  errorResponse,
+  throwError,
+} = require("../../../utils/response");
 const {
   accessTokenCreator,
   accessTokenExpiredTimeValidator,
@@ -23,7 +21,7 @@ const forgetPasswordModel = require("../../../models/v1/forgetPassword");
 exports.register = async (req, res) => {
   const { email, username, name, password, confirmPassword } = req.body;
   try {
-    await registerUserVakidator.validate(
+    await userValidator.registerUserVakidator.validate(
       {
         email,
         username,
@@ -42,12 +40,7 @@ exports.register = async (req, res) => {
       })
       .lean();
     if (isUserExist) {
-      return errorResponse(res, 409, "email or password is exist", {
-        email,
-        username,
-        name,
-      });
-      // return res.status(409).json({ msg: `email or password is exist` });
+      throwError("email or password is exist", 401);
     }
     const isFirstUser = (await userModel.countDocuments()) === 0;
 
@@ -60,7 +53,7 @@ exports.register = async (req, res) => {
       role: isFirstUser ? "ADMIN" : "USER",
     });
     user = await user.save();
-    const accessToken = accessTokenCreator(user, "30s");
+    const accessToken = accessTokenCreator(user, "30d");
     const refreshToken = await RefreshTokenModel.createToken(user);
 
     res.cookie("access-token", accessToken, {
@@ -76,32 +69,22 @@ exports.register = async (req, res) => {
       user: { ...user.toObject(), password: undefined, accessToken },
     });
   } catch (error) {
-    return errorResponse(res, 409, error.errors, {
-      email,
-      username,
-      name,
-      password,
-      confirmPassword,
-    });
+    return errorResponse(res, error.statusCode, { message: error.message });
   }
 };
 exports.login = async (req, res) => {
   const { identity, password } = req.body;
   try {
-    await logInUserValidator.validate({ identity, password });
+    await userValidator.logInUserValidator.validate({ identity, password });
     const user = await userModel
       .findOne({ $or: [{ email: identity }, { username: identity }] })
       .lean();
     if (!user) {
-      return errorResponse(res, 404, "user not found", {
-        identity,
-      });
+      throwError("user not found", 404);
     }
     const isPasswordMatch = await bcrypt.compare(password, user.password);
     if (!isPasswordMatch) {
-      return errorResponse(res, 401, "email or password is not true", {
-        identity,
-      });
+      throwError("email or password is not true", 401);
     }
 
     const accessToken = accessTokenCreator(user, "30d");
@@ -121,11 +104,7 @@ exports.login = async (req, res) => {
       data: { ...user, password: undefined, accessToken },
     });
   } catch (error) {
-    console.log(error);
-    return errorResponse(res, 409, error.errors, {
-      identity,
-      password,
-    });
+    return errorResponse(res, error.statusCode, { message: error.message });
   }
 };
 exports.refreshToken = async (req, res) => {
@@ -133,20 +112,13 @@ exports.refreshToken = async (req, res) => {
   try {
     const userId = await RefreshTokenModel.verifyToken(refreshToken);
     if (!userId) {
-      return errorResponse(
-        res,
-        401,
-        "refresh token not found or expier please login",
-        { refreshToken }
-      );
+      throwError("refresh token not found or expier please login", 400);
     }
     // delete refresh token doc in modele refresh token
     await RefreshTokenModel.findOneAndDelete({ token: refreshToken });
     const user = await userModel.findOne({ _id: userId });
     if (!user) {
-      return errorResponse(res, 404, "user token not found  please login", {
-        userId,
-      });
+      throwError("user token not found  please login", 404);
     }
     const accessToken = accessTokenCreator(user, "30s");
     const newRefreshToken = await RefreshTokenModel.createToken(user);
@@ -164,15 +136,14 @@ exports.refreshToken = async (req, res) => {
       accessToken,
     });
   } catch (error) {
-    console.log(error);
-    return errorResponse(res, 409, error, { refreshToken });
+    return errorResponse(res, error.statusCode, { message: error.message });
   }
 };
 exports.updatePassword = async (req, res) => {
   const { pervPassword, newPassword, newConfrimPassword } = req.body;
   try {
     const authorizationHeader = req.headers.authorization;
-    await updatePasswordValidator.validate(
+    await userValidator.updatePasswordValidator.validate(
       {
         pervPassword,
         newPassword,
@@ -188,29 +159,26 @@ exports.updatePassword = async (req, res) => {
     let user = await userModel.findOne({ _id: userId });
     const isPasswordMatch = await bcrypt.compare(pervPassword, user.password);
     if (!isPasswordMatch) {
-      return errorResponse(res, 401, " pervPassword is not match", {
-        pervPassword,
-      });
+      throwError("pervPassword is not match", 4001);
     }
     user.password = newPassword;
     user = await user.save();
 
-    return successResponse(res, 200, {
+    return successResponse(res, 201, {
       message: "reset password is  successfully",
       user: { ...user.toObject(), password: undefined },
     });
   } catch (error) {
-    console.log(error);
-    return errorResponse(res, 409, error, {});
+    return errorResponse(res, error.message, { message: error.message });
   }
 };
 exports.forgetPassword = async (req, res) => {
   const { email } = req.body;
   try {
-    await forGetPasswordValidator.validate({ email: email });
+    await userValidator.forGetPasswordValidator.validate({ email: email });
     const user = await userModel.findOne({ email });
     if (!user) {
-      return errorResponse(res, 404, "user not found", email);
+      throwError("user not found", 404);
     }
     const resetPassordToken = crypto.randomBytes(32).toString("hex");
     const resetTokenExpireTime = Date.now() + 60000 * 120;
@@ -244,15 +212,14 @@ exports.forgetPassword = async (req, res) => {
       data: email,
     });
   } catch (error) {
-    console.log(error);
-    return errorResponse(res, 409, error, {});
+    return errorResponse(res, error.statusCode, { message: error.message });
   }
 };
 exports.resetPassword = async (req, res) => {
   const { token, new_password } = req.body;
 
   try {
-    await resetPasswordValidator.validate(
+    await userValidator.resetPasswordValidator.validate(
       { token, new_password },
       { abortEarly: false }
     );
@@ -261,15 +228,13 @@ exports.resetPassword = async (req, res) => {
       tokenExpireTime: { $gt: Date.now() },
     });
     if (!resultResetSearchTokenInDb) {
-      return errorResponse(res, 401, "token not valid or expierd", { token });
+      throwError("token not valid or expierd", 401);
     }
     const user = await userModel.findOne({
       _id: resultResetSearchTokenInDb.user,
     });
     if (!user) {
-      return errorResponse(res, 401, "user not found", {
-        userId: resultResetSearchTokenInDb.user,
-      });
+      throwError("user not found", 404);
     }
 
     const hashedPassword = await bcrypt.hash(new_password, 10);
@@ -290,5 +255,33 @@ exports.resetPassword = async (req, res) => {
   } catch (error) {
     console.log(error);
     return errorResponse(res, 409, error, {});
+  }
+};
+exports.userBanToggle = async (req, res) => {
+  try {
+    const { userid } = req.body;
+
+    const user = await userValidator.banUserToAccess(req);
+    if (user.isban) {
+      await userModel.findByIdAndUpdate({ _id: userid }, { isban: false });
+      successResponse(res, 201, {
+        message: "The user was successfully unbanned",
+      });
+    } else {
+      await userModel.findByIdAndUpdate({ _id: userid }, { isban: true });
+      successResponse(res, 201, {
+        message: "The user was successfully banned",
+      });
+    }
+  } catch (error) {
+    errorResponse(res, error.statusCode, { message: error.message });
+  }
+};
+exports.userInformation = async (req, res) => {
+  try {
+    const user = await userValidator.userInformation(req);
+    successResponse(res, 200, { message: " successfully ", user });
+  } catch (error) {
+    errorResponse(res, error.statusCode, { message: error.message });
   }
 };

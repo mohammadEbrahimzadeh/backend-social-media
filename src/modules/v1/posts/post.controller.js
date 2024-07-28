@@ -5,15 +5,7 @@ const {
   successResponse,
   throwError,
 } = require("../../../utils/response");
-const {
-  createPostAccess,
-  searchPostsAccess,
-  deletePostsAccess,
-  updatePostsAccess,
-  likeTogglePostsAccess,
-  addCommentPostsAccess,
-  deleteCommentPostValidator,
-} = require("./postValidator");
+const postValidator = require("./postValidator");
 const postModel = require("../../../models/v1/post");
 const likeToggleModel = require("../../../models/v1/likeToggle");
 const savepostsModel = require("../../../models/v1/savePost");
@@ -23,7 +15,7 @@ exports.createPost = async (req, res) => {
   try {
     const user = req.user;
     const { title, description, hashtags } = req.body;
-    await createPostAccess(req, res);
+    await postValidator.createPostAccess(req, res);
     const tags = hashtags.split(",");
     const mediaUrlPath = `images/posts/${req.file.filename}`;
     const post = new postModel({
@@ -69,7 +61,7 @@ exports.myPosts = async (req, res) => {
 exports.searchPosts = async (req, res) => {
   try {
     const query = req.query.query;
-    searchPostsAccess(req, res);
+    postValidator.searchPostsAccess(req, res);
     const regex = new RegExp(query, "i");
     const resultSearch = await postModel
       .find({ title: { $regex: regex } })
@@ -83,7 +75,7 @@ exports.searchPosts = async (req, res) => {
 exports.deletePost = async (req, res) => {
   try {
     const { postid } = req.body;
-    await deletePostsAccess(req, res);
+    await postValidator.deletePostsAccess(req, res);
     const resultPostDelete = await postModel.deleteOne({ _id: postid });
     if (resultPostDelete.deletedCount < 1) {
       throwError("post is not found", 404);
@@ -98,7 +90,7 @@ exports.updatePost = async (req, res) => {
   try {
     const { title, description, hashtags } = req.body;
     const user = req.user;
-    await updatePostsAccess(req, res);
+    await postValidator.updatePostsAccess(req, res);
 
     const mediaUrlPath = `images/posts/${req.file.filename}`;
     const tags = hashtags.split(",");
@@ -135,7 +127,7 @@ exports.likeToggle = async (req, res) => {
   try {
     const user = req.user;
     const { postid } = req.body;
-    await likeTogglePostsAccess(req, res);
+    await postValidator.likeTogglePostsAccess(req, res);
     const likeToggleRecord = await likeToggleModel.findOne({
       userid: user._id,
       postid,
@@ -147,7 +139,7 @@ exports.likeToggle = async (req, res) => {
         postid,
       });
 
-      const result = await postModel.updateOne(
+      await postModel.updateOne(
         { _id: postid },
         {
           $pull: {
@@ -176,7 +168,7 @@ exports.savePostToggle = async (req, res) => {
   try {
     const user = req.user;
     const { postid } = req.body;
-    await likeTogglePostsAccess(req, res);
+    await postValidator.likeTogglePostsAccess(req, res);
     const savePostToggleRecord = await savepostsModel.findOne({
       userid: user._id,
       postid,
@@ -205,7 +197,7 @@ exports.addComment = async (req, res) => {
   try {
     const user = req.user;
     const { postid, title, content } = req.body;
-    await addCommentPostsAccess(req, res);
+    await postValidator.addCommentPostsAccess(req, res);
     let comment = new commentModel({
       postid,
       userid: user._id,
@@ -225,7 +217,7 @@ exports.addComment = async (req, res) => {
 exports.deleteComment = async (req, res) => {
   try {
     const { commentid } = req.body;
-    await deleteCommentPostValidator(req, res);
+    await postValidator.deleteCommentPostValidator(req, res);
     const resultDelete = await commentModel.deleteOne({ _id: commentid });
     if (resultDelete.deletedCount < 1) {
       throwError("comment is not found", 404);

@@ -48,6 +48,10 @@ const userSchema = new mongoose.Schema(
       enum: ["USER", "ADMIN"],
       default: "uSER",
     },
+    isban: {
+      type: Boolean,
+      default: false,
+    },
   },
   {
     timestamps: true,
