@@ -53,7 +53,7 @@ exports.register = async (req, res) => {
       role: isFirstUser ? "ADMIN" : "USER",
     });
     user = await user.save();
-    const accessToken = accessTokenCreator(user, "30d");
+    const accessToken = accessTokenCreator(user, "30s");
     const refreshToken = await RefreshTokenModel.createToken(user);
 
     res.cookie("access-token", accessToken, {
@@ -87,7 +87,7 @@ exports.login = async (req, res) => {
       throwError("email or password is not true", 401);
     }
 
-    const accessToken = accessTokenCreator(user, "30d");
+    const accessToken = accessTokenCreator(user, "30s");
 
     const refreshToken = await RefreshTokenModel.createToken(user);
     res.cookie("access-token", accessToken, {
@@ -181,7 +181,7 @@ exports.forgetPassword = async (req, res) => {
       throwError("user not found", 404);
     }
     const resetPassordToken = crypto.randomBytes(32).toString("hex");
-    const resetTokenExpireTime = Date.now() + 60000 * 120;
+    const resetTokenExpireTime = Date.now() + 60000 * 5; //5 min
     let forgetPasswordDataInDb = new forgetPasswordModel({
       user: user._id,
       token: resetPassordToken,

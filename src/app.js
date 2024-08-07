@@ -43,8 +43,3 @@ app.use(errorHandler); // middleware error handler
 
 //export
 module.exports = app;
-
-// refactor user controller
-// refactor resposes  + status codes
-// baack expier time access token
-// baack expier time otp email
