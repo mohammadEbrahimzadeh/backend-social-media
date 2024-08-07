@@ -7,6 +7,7 @@ const userRouter = require("./modules/v1/users/user.routes");
 const postRouter = require("./modules/v1/posts/post.routes");
 const errorHandler = require("./middlewares/errorHandler ");
 const convertToTrim = require("./middlewares/convertToTrim");
+const apiDocRoutes = require("./modules/v1/apiDoc/swagger.routes");
 const app = express();
 // parse application/x-www-form-urlencoded
 app.use(express.urlencoded({ limit: "50mb", extended: true }));
@@ -27,6 +28,7 @@ app.use("/images", express.static(path.join(__dirname, "public/images")));
 //convert to trim req.body
 app.use(convertToTrim);
 // routes
+app.use("/api-doc", apiDocRoutes);
 app.use("/users", userRouter);
 app.use("/posts", postRouter);
 // 404 err handler

@@ -238,7 +238,7 @@ exports.mySavePosts = async (req, res) => {
         myPosts.push(result);
       }
     }
-    successResponse(res, 201, { myPosts });
+    successResponse(res, 200, { myPosts });
   } catch (error) {
     errorResponse(res, 500, { message: error.message });
   }
@@ -250,8 +250,11 @@ exports.postDetails = async (req, res) => {
       .findOne({ _id: postid })
       .populate("comments")
       .populate("likes", "-__v");
-    successResponse(res, 201, { result });
+    if (result == null) {
+      throwError("post is not found", 404);
+    }
+    successResponse(res, 200, { result });
   } catch (error) {
-    errorResponse(res, 500, { message: error.message });
+    errorResponse(res, error.statusCode, { message: error.message });
   }
 };

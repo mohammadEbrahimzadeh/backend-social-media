@@ -159,7 +159,7 @@ exports.updatePassword = async (req, res) => {
     let user = await userModel.findOne({ _id: userId });
     const isPasswordMatch = await bcrypt.compare(pervPassword, user.password);
     if (!isPasswordMatch) {
-      throwError("pervPassword is not match", 4001);
+      throwError("pervPassword is not match", 401);
     }
     user.password = newPassword;
     user = await user.save();
