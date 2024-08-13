@@ -22,6 +22,8 @@ This project is developed using NodeJS and ExpressJS and requires MongoDB databa
 [![Swagger](https://img.shields.io/badge/Swagger-85EA2D.svg?style=for-the-badge&logo=Swagger&logoColor=black)](https://swagger.io/)
 ## Features
 
+- API base
+- Developed with REST API
 - Register and Login
 - Update password
 - Forget password (OTP Email)
